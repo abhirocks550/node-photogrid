@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>PhotoGrid</title>
+	<link rel="stylesheet" href="../css/main.css">
+	<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="../js/photogrid_utils.js"></script>
+	<script>
+		$(function() {
+			var host = '{{host}}';
+
+			$(document).on('click', '#doUpload', function() {
+				uploadNow();
+			})
+
+			var socket = io(host);
+
+			socket.on('status', function(data) {
+				showStatus(data.msg, data.delay);
+			})
+
+			socket.on('doUpdate', function() {
+				renderList();
+			})
+
+			function renderList() {
+				$('.gallery ul').html('');
+				ajax({
+					url: host + '/getimages',
+					success: function(data) {
+						var imageList = JSON.parse(data.response);
+						for (var i = 0; i < imageList.length; i++) {
+							var str = '<li>';
+							str += '<div class="overlay">';
+							str += '<div class="voteCtrl">';
+							str += '<a href="#" data-photoid="' + imageList[i]._id + '" class="voteUp">';
+							str += '<img src="../images/voteup.png" alt="Click Here to Vote Up !">';
+							str += '<h4>' + imageList[i].votes + '</h4>';
+							str += '</a>';
+							str += '</div>';
+							str += '</div>';
+							str += '<div class="imageHolder">';
+							str += '<img src="http://d2i61mkg2f72zh.cloudfront.net/' + imageList[i].filename + '" alt="">';
+							str += '</div>';
+							str += '</li>';
+
+							$('.gallery ul').append(str);
+						}
+					}
+				})
+			}
+
+			renderList();
+
+			function uploadNow() {
+				$('.progress').fadeIn(100);
+				var uploadURL = host + '/upload';
+				var uploadFile = $('.uploadPic');
+				if (uploadFile.val() != '') {
+					var form = new FormData();
+					form.append("upload", uploadFile[0].files[0]);
+					// Perform the AJAX POST request and send the file
+					ajax({
+						method: 'post',
+						url: uploadURL,
+						success: function() {
+							$('.progress').fadeOut(200);
+							uploadFile.val('');
+						},
+						progress: function(e) {
+							if (e.lengthComputable) {
+								var perc = Math.round((e.loaded * 100) / e.total);
+								$('.progress').css('width', (perc + '%'));
+							}
+						},
+						payload: form
+					})
+				}
+			}
+
+			$(document).on('click', '.voteUp', function(e) {
+				var that = $(this);
+				ajax({
+					url: host + '/voteup/' + that.data('photoid'),
+					success: function(data) {
+						var parseData = JSON.parse(data.response);
+						that.find('h4').html(parseData.votes);
+					}
+				})
+			})
+
+		})
+	</script>
+
+</head>
+
+<body>
+	<div class="container">
+		<div class="topDeck">
+			<div class="logo">
+				<h1>PhotoGRID</h1>
+			</div>
+			<div class="controls">
+				<input type="file" name="uploadPic" class="uploadPic">
+				<button id="doUpload">Upload</button>
+				<div class="progressBarDiv">
+					<div class="progress"></div>
+				</div>
+				<h5 class="status"></h5>
+			</div>
+		</div>
+		<div class="gallery">
+			<ul>
+				<!-- Repeat the following <li> structure for every image -->
+				<!-- <li>
+					<div class="overlay">
+					<div class="voteCtrl">
+						<a href="#" class="voteUp">
+							<img src="../images/voteup.png" alt="Click Here to Vote Up !">
+							<h4>100</h4>
+						</a>
+					</div>
+					</div>
+					<div class="imageHolder">
+						<img src="../images/someimage.jpg" alt="">
+					</div>
+				</li> -->
+				<!-- End Repeat -->
+
+
+			</ul>
+		</div>
+	</div>
+</body>
+
+</html>

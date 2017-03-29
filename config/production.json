@@ -1,0 +1,7 @@
+{
+  "host":"http://localhost:3000",
+  "S3AccessKey":"",
+  "S3Secret":"",
+  "S3Bucket":"",
+    "dbURL":""
+}
